@@ -1,11 +1,11 @@
 RSpec.describe Shopping::Cart::Checkout do
-  let(:special_free) { Shopping::Cart::Special.new(label: 'Free VGA', type: 'freeProduct', targetSku: 'vga') }
-  let(:special_qtyDiscount) { Shopping::Cart::Special.new(label: '3 for 2 Special', type: 'qtyDiscount', discountQty: 3, discountQtyVolume: 1) }
-  let(:special_priceDiscount) { Shopping::Cart::Special.new(label: 'Bulk Discount', type: 'priceDiscount', discountQty: 3, discountPrice: 499.99) }
+  let(:special_free) { Shopping::Cart::FreeTypeDiscount.new(label: 'Free VGA', type: 'freeProduct', targetSku: 'vga') }
+  let(:special_qtyDiscount) { Shopping::Cart::QtyTypeDiscount.new(label: '3 for 2 Special', type: 'qtyDiscount', discountQty: 3, discountQtyVolume: 1) }
+  let(:special_priceDiscount) { Shopping::Cart::PriceTypeDiscount.new(label: 'Bulk Discount', type: 'priceDiscount', discountQty: 3, discountPrice: 499.99) }
 
-  let(:item_1) { Shopping::Cart::Item.new(sku: 'ipd', name: 'Super iPad', price: 549.99).tap{|t| t.addToSpecial(special_priceDiscount) }}
-  let(:item_2) { Shopping::Cart::Item.new(sku: 'mbp', name: 'Macbook pro', price: 1399.99).tap{|t| t.addToSpecial(special_free) } }
-  let(:item_3) { Shopping::Cart::Item.new(sku: 'atv', name: 'Apple TV', price: 109.50).tap{|t| t.addToSpecial(special_qtyDiscount) } }
+  let(:item_1) { Shopping::Cart::Item.new(sku: 'ipd', name: 'Super iPad', price: 549.99).tap{|t| t.addToDiscount(special_priceDiscount) }}
+  let(:item_2) { Shopping::Cart::Item.new(sku: 'mbp', name: 'Macbook pro', price: 1399.99).tap{|t| t.addToDiscount(special_free) } }
+  let(:item_3) { Shopping::Cart::Item.new(sku: 'atv', name: 'Apple TV', price: 109.50).tap{|t| t.addToDiscount(special_qtyDiscount) } }
   let(:item_4) { Shopping::Cart::Item.new(sku: 'vga', name: 'VGA Adapter', price: 30.00) }
 
   let(:inventory) { [item_1, item_2, item_3, item_4] }
@@ -14,7 +14,7 @@ RSpec.describe Shopping::Cart::Checkout do
 
   describe 'When initialised' do
     it 'is expected to start with empty cart' do
-      expect(subject.store).to eq({})
+      expect(subject.cart).to eq({})
     end
   end
 
@@ -26,13 +26,13 @@ RSpec.describe Shopping::Cart::Checkout do
     describe "when item is scanned" do
       it 'is expected to add to the cart' do 
         subject.scan("ipd")
-        expect(subject.store).to have_key(:ipd)
+        expect(subject.cart).to have_key(:ipd)
       end
 
       it 'is expected to accomodate multiple items in cart' do 
         subject.scan("ipd")
         subject.scan("vga")
-        expect(subject.store.keys).to include(:ipd, :vga)
+        expect(subject.cart.keys).to include(:ipd, :vga)
       end
     end
   end    
@@ -42,9 +42,9 @@ RSpec.describe Shopping::Cart::Checkout do
       it 'is expected to empty the cart' do
         subject.scan("ipd")
         subject.scan("vga")
-        expect(subject.store.keys).to include(:ipd, :vga)
+        expect(subject.cart.keys).to include(:ipd, :vga)
         subject.clear
-        expect(subject.store).to eq({})
+        expect(subject.cart).to eq({})
       end
     end
   end    
@@ -89,6 +89,19 @@ RSpec.describe Shopping::Cart::Checkout do
       end
     end
 
+    describe 'when inventory is empty' do
+      subject { Shopping::Cart::Checkout.new([]) }
+
+      it 'is expected to raise NoInventoryError' do 
+        expect { subject.total }.to raise_error(Shopping::Cart::NoInventoryError, "Inventory is empty")
+      end
+    end
+
+    describe 'when cart is empty' do  
+      it 'is expected to raise CartIsEmptyError' do 
+        expect { subject.total }.to raise_error(Shopping::Cart::CartIsEmptyError, "Cart is empty")
+      end
+    end
   end
 end
   
