@@ -8,6 +8,28 @@ module Shopping
                 @cart = cart
             end
 
+            def checkout_price
+                total_price = 0.0
+
+                cart.keys.each do |key|
+                    case cart[key][:discountType]
+                    when 'priceDiscount'
+                        total_price += priceDiscountForCart(key)
+                    when 'qtyDiscount'
+                        total_price += qtyDiscountForCart(key)
+                    when 'freeProduct'
+                        total_price += freeProductPriceForCart(key)
+                    else
+                      fts = inventory.select{|item| item.sku == key.to_s }
+                      total_price += cart[key][:count] * fts.first.price
+                    end
+                end
+
+                total_price
+            end
+
+            private
+
             def priceDiscountForCart(key)
                 # Find an item by key (sku). (Used to fetch discount attached to an item)
                 listing = inventory.find{|i| i.sku == key.to_s}
@@ -74,27 +96,7 @@ module Shopping
                  end
 
                  freeProductLen * listing.price
-            end
-
-            def checkout_price
-                total_price = 0.0
-
-                cart.keys.each do |key|
-                    case cart[key][:discountType]
-                    when 'priceDiscount'
-                        total_price += priceDiscountForCart(key)
-                    when 'qtyDiscount'
-                        total_price += qtyDiscountForCart(key)
-                    when 'freeProduct'
-                        total_price += freeProductPriceForCart(key)
-                    else
-                      fts = inventory.select{|item| item.sku == key.to_s }
-                      total_price += cart[key][:count] * fts.first.price
-                    end
-                end
-
-                total_price
-            end
+            end     
         end
     end
 end

@@ -10,47 +10,48 @@ RSpec.describe Shopping::Cart::Calculate do
   
     let(:inventory) { [item_1, item_2, item_3, item_4] }
 
-    # checkout_price is already tested as part of checkout - total_price method. 
-
     subject {  Shopping::Cart::Calculate }
-  
-    context '#priceDiscountForCart' do
-      describe "when cart has multiple items" do
+
+    context '#checkout_price' do
+      describe "when cart has priceDiscount item" do
         let!(:co) { Shopping::Cart::Checkout.new(inventory) }
-        it 'is expected to return the price for PriceTypeDiscount item' do 
+        it 'is expected to return the price from priceDiscountForCart' do 
           co.scan("ipd")
+          cal = subject.new(inventory, co.cart)
+
+          expect(cal.checkout_price).to eq(549.99)
+        end
+      end
+
+      describe "when cart has qtyDiscount item" do
+        let!(:co) { Shopping::Cart::Checkout.new(inventory) }
+        it 'is expected to return the price from qtyDiscountForCart' do 
+          co.scan("atv")
+          cal = subject.new(inventory, co.cart)
+
+          expect(cal.checkout_price).to eq(109.50)
+        end
+      end
+
+      describe "when cart has freeProduct item" do
+        let!(:co) { Shopping::Cart::Checkout.new(inventory) }
+        it 'is expected to return the price from freeProductPriceForCart' do 
+          co.scan("mbp")
+          cal = subject.new(inventory, co.cart)
+
+          expect(cal.checkout_price).to eq(1399.99)
+        end
+      end
+
+      describe "when cart has item without discounts" do
+        let!(:co) { Shopping::Cart::Checkout.new(inventory) }
+        it 'is expected to return the price from default part of checkout price' do 
           co.scan("vga")
           cal = subject.new(inventory, co.cart)
 
-          expect(cal.priceDiscountForCart(:ipd)).to eq(549.99)
+          expect(cal.checkout_price).to eq(30.00)
         end
       end
-    end    
-
-    context '#qtyDiscountForCart' do
-      describe "when cart has multiple items" do
-        let!(:co) { Shopping::Cart::Checkout.new(inventory) }
-        it 'is expected to return the price for qtyDiscount item' do 
-          co.scan("atv")
-          co.scan("ipd")
-          cal = subject.new(inventory, co.cart)
-
-          expect(cal.priceDiscountForCart(:atv)).to eq(109.50)
-        end
-      end
-    end    
-
-    context '#freeProductPriceForCart' do
-      describe "when cart has multiple items" do
-        let!(:co) { Shopping::Cart::Checkout.new(inventory) }
-        it 'is expected to return the price for PriceTypeDiscount item' do 
-          co.scan("mbp")
-          co.scan("ipd")
-          cal = subject.new(inventory, co.cart)
-
-          expect(cal.freeProductPriceForCart(:mbp)).to eq(1399.99)
-        end
-      end
-    end    
+    end
   end
     
