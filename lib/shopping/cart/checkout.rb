@@ -9,22 +9,20 @@ module Shopping
         end
 
         def scan(sku)
+            item = @inventory.find{|item| item.sku == sku }
+            
+            raise Shopping::Cart::ItemNotExistsError.new('Item not present in the Inventory') if item.nil?
+
             if @cart[sku.to_sym] 
-              @cart[sku.to_sym][:count] = @cart[sku.to_sym][:count] + 1
+              @cart[sku.to_sym][:count] += 1
             else
               @cart.merge!({
                 "#{sku}": {
                   count: 1,
-                  discountType: @inventory.find{|item| item.sku == sku }.discount&.type
+                  discountType: item.discount&.type
                 }
               })
             end
-        end
-
-        def remove(sku)
-          if(sku)
-            @cart.delete(sku)
-          end
         end
 
         def clear
@@ -37,7 +35,7 @@ module Shopping
           raise Shopping::Cart::NoInventoryError.new('Inventory is empty') if @inventory.length <= 0
           raise Shopping::Cart::CartIsEmptyError.new('Cart is empty') if @cart.keys.length <= 0
           
-          Shopping::Cart::Calculate.checkout_price(@inventory, @cart)
+          Shopping::Cart::Calculate.new(@inventory, @cart).checkout_price
         end
       end
     end

@@ -23,6 +23,12 @@ RSpec.describe Shopping::Cart::Checkout do
       subject.clear
     end
 
+    describe 'when item not in the inventory is scanned' do
+      it 'is expected to raise ItemNotExistsError' do 
+        expect { subject.scan("ipad") }.to raise_error(Shopping::Cart::ItemNotExistsError, "Item not present in the Inventory")
+      end
+    end
+
     describe "when item is scanned" do
       it 'is expected to add to the cart' do 
         subject.scan("ipd")
@@ -52,6 +58,51 @@ RSpec.describe Shopping::Cart::Checkout do
   context '#total' do
     after(:each) do 
       subject.clear
+    end
+
+    describe 'when SKUs Scanned: ipd' do
+      it 'is expected to return $549.99' do 
+        subject.scan("ipd")
+
+        expect(subject.total).to eq(549.99)
+      end
+    end
+
+    describe 'when SKUs Scanned: mbp' do
+      it 'is expected to return $1399.99' do 
+        subject.scan("mbp")
+
+        expect(subject.total).to eq(1399.99)
+      end
+    end
+
+    describe 'when SKUs Scanned: atv' do
+      it 'is expected to return $109.50' do 
+        subject.scan("atv")
+
+        expect(subject.total).to eq(109.50)
+      end
+    end
+
+    describe 'when SKUs Scanned: vga' do
+      it 'is expected to return $30.00' do 
+        subject.scan("vga")
+
+        expect(subject.total).to eq(30.00)
+      end
+    end
+
+
+    describe 'SKUs Scanned: ipd, mbp, atv, vga' do
+      it 'is expected to return $2,059.48' do 
+        subject.scan("ipd")
+        subject.scan("mbp")
+        subject.scan("atv")
+        subject.scan("vga")
+     
+        
+        expect(subject.total).to eq(2059.48)
+      end
     end
 
     describe 'when SKUs Scanned: atv, atv, atv, vga' do
@@ -86,6 +137,17 @@ RSpec.describe Shopping::Cart::Checkout do
         subject.scan("ipd")
         
         expect(subject.total).to eq(1949.98)
+      end
+    end
+
+
+    describe 'SKUs Scanned: vga (No discounts attached)' do
+      it 'is expected to return $300.00' do 
+        10.times do |i|
+          subject.scan("vga")
+        end
+        
+        expect(subject.total).to eq(300.00)
       end
     end
 

@@ -1,72 +1,92 @@
 module Shopping
     module Cart
         class Calculate
-            def self.checkout_price(inventory, cart)
+            attr_reader :inventory, :cart
+
+            def initialize(inventory, cart)
+                @inventory = inventory
+                @cart = cart
+            end
+
+            def priceDiscountForCart(key)
+                # Find an item by key (sku). (Used to fetch discount attached to an item)
+                listing = inventory.find{|i| i.sku == key.to_s}
+
+                # Fetch the discount attributes
+                discount = listing.discount
+
+                # If the number of items ordered are more than discount discount quantity
+                # use the discount price to calculate the total price
+                # else use item price.
+                if cart[key][:count] > discount.discountQty
+                  cart[key][:count] * discount.discountPrice
+                else
+                  cart[key][:count] * listing.price
+                end
+            end
+
+            def qtyDiscountForCart(key)
+                 # Find an item by key (sku). (Used to fetch discount attached to an item)
+                 listing = inventory.find{|i| i.sku == key.to_s } 
+
+                 # Fetch the discount attributes
+                 discount = listing.discount
+ 
+                 # if ordered count < discount quantity
+                 # use item price times units ordered
+                 # else use apply price for only non-discounted items
+                 c = cart[key][:count]
+                 if c < discount.discountQty
+                    c * listing.price
+                 else
+                   rem = c / discount.discountQty
+                   (c - rem) * listing.price
+                 end
+            end
+
+
+            def freeProductPriceForCart(key)
+                 # Find an item by key (sku). (Used to fetch discount attached to an item)
+                 listing = inventory.find{|item| item.sku == key.to_s }
+
+                 # Fetch the discount attributes
+                 discount = listing.discount
+ 
+                 # find the targetSku in the items
+                 tSkus =  inventory.select{|item| item.sku == discount.targetSku }
+ 
+                 # Fetch count of tSkus if already in the cart
+                 tSkusLen = cart[discount.targetSku.to_sym] ? cart[discount.targetSku.to_sym][:count] : 0
+ 
+                 # Main product count for which this special is attached
+                 freeProductLen = cart[key][:count]
+ 
+                 if freeProductLen >= tSkusLen 
+                   cart[discount.targetSku.to_sym] = {
+                     count: 0,
+                     discountType: nil
+                   }
+                 else
+                   cart[discount.targetSku.to_sym] = {
+                     count: tSkusLen - freeProductLen,
+                     discountType: nil
+                   } 
+                 end
+
+                 freeProductLen * listing.price
+            end
+
+            def checkout_price
                 total_price = 0.0
 
                 cart.keys.each do |key|
                     case cart[key][:discountType]
                     when 'priceDiscount'
-                      # Filter items by key (sku).
-                      fts = inventory.select{|item| item.sku == key.to_s} # all the items with same sku
-                      # Fetch the discount attributes from the first (as they are same)
-                      discount = fts.first.discount
-      
-                      # If the number of items ordered are more than discount discount quantity
-                      if cart[key][:count] > discount.discountQty
-                        total_price += cart[key][:count] * discount.discountPrice
-                      else
-                        total_price += cart[key][:count] * fts.first.price
-                      end
+                        total_price += priceDiscountForCart(key)
                     when 'qtyDiscount'
-                      # Filter items by key (sku).
-                      fts = inventory.select{|item| item.sku == key.to_s } # all the items with same sku
-                      # Fetch the discount attributes from the first (as they are same)
-                      discount = fts.first.discount
-      
-                      # discount.discountQty
-                      c = cart[key][:count]
-                      if c < discount.discountQty
-                        total_price += c * fts.first.price
-                      elsif c % 3 == 0
-                        rem = c / 3
-      
-                        total_price += (c - rem) * fts.first.price
-                      end
+                        total_price += qtyDiscountForCart(key)
                     when 'freeProduct'
-                      # Filter items by key (sku).
-                      fts = inventory.select{|item| item.sku == key.to_s } # all the items with same sku
-                      # Fetch the discount attributes from the first (as they are same)
-                      discount = fts.first.discount
-      
-                      # find the targetSku in the items
-                      tSkus =  inventory.select{|item| item.sku == discount.targetSku }
-      
-                      # discountTargetSku length
-                      tSkusLen = cart[discount.targetSku.to_sym][:count]
-      
-                      # freeProduct Length
-                      freeProductLen = cart[key][:count]
-      
-                      if freeProductLen > tSkusLen
-                        total_price += freeProductLen * fts.first.price
-                        cart[discount.targetSku.to_sym] = {
-                          count: 0,
-                          discountType: nil
-                        } # look into this
-                      elsif tSkusLen == freeProductLen
-                        total_price += freeProductLen * fts.first.price
-                        cart[discount.targetSku.to_sym] = {
-                          count: 0,
-                          discountType: nil
-                        } 
-                      else
-                        total_price += freeProductLen * fts.first.price
-                        cart[discount.targetSku.to_sym] = {
-                          count: tSkusLen - freeProductLen,
-                          discountType: nil
-                        } 
-                      end
+                        total_price += freeProductPriceForCart(key)
                     else
                       fts = inventory.select{|item| item.sku == key.to_s }
                       total_price += cart[key][:count] * fts.first.price

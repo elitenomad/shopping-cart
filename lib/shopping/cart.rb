@@ -9,5 +9,6 @@ module Shopping
     class Error < StandardError; end
     class NoInventoryError < StandardError; end
     class CartIsEmptyError < StandardError; end
+    class ItemNotExistsError < StandardError; end
   end
 end
