@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["stalin.pranava@gmail.com"]
 
   spec.summary       = %q{iUS coding challenge}
-  spec.description   = %q{DiUS challenge: computer store checkout system which can apply discounts on the products}
+  spec.description   = %q{Dias challenge: computer store checkout system which can apply discounts on the products}
   spec.homepage      = "https://github.com/elitenomad/shopping-cart"
   spec.license       = "MIT"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
